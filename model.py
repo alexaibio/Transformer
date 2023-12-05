@@ -257,8 +257,10 @@ class Transformer(nn.Module):
     src_embedding - for input language
     tgt_embedding - for the target language
     '''
-    def __init__(self, encoder: Encoder, decoder: Decoder, src_embed: InputEmbeddings, tgt_embed: InputEmbeddings,
-                 src_pos: PositionalEncoding, tgt_pos: PositionalEncoding, projection_layer: ProjectionLayer) -> None:
+    def __init__(self,
+                 encoder: Encoder, decoder: Decoder, src_embed: InputEmbeddings, tgt_embed: InputEmbeddings,
+                 src_pos: PositionalEncoding, tgt_pos: PositionalEncoding, projection_layer: ProjectionLayer
+                 ) -> None:
         super().__init__()
         self.encoder = encoder
         self.decoder = decoder
@@ -292,7 +294,7 @@ def build_transformer(
         src_vocab_size: int, tgt_vocab_size: int,
         src_seq_len: int, tgt_seq_len: int,
         d_model: int = 512,
-        N: int = 6,
+        N: int = 1,  # 6 number of layers (btoh encoder and decoder?)
         h: int = 8,  # number of heads in attention
         dropout: float = 0.1,
         d_ff: int = 2048  # hidden forward layer

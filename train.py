@@ -20,7 +20,7 @@ import os
 from pathlib import Path
 import torchmetrics
 from torch.utils.tensorboard import SummaryWriter
-from utils import vizualize_model
+from utils import vizualize_model_by_keys
 
 # Define the device
 device = "cuda" if torch.cuda.is_available() else "mps" if torch.has_mps or torch.backends.mps.is_available() else "cpu"
@@ -162,7 +162,6 @@ def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_
 
 def train_model(config):
 
-
     # Make sure the weights folder exists
     Path(f"{config['datasource']}_{config['model_folder']}").mkdir(parents=True, exist_ok=True)
 
@@ -198,7 +197,6 @@ def train_model(config):
         model.train()
         batch_iterator = tqdm(train_dataloader, desc=f"Processing Epoch {epoch:02d}")
         for batch in batch_iterator:
-
             encoder_input = batch['encoder_input'].to(device) # (b, seq_len)
             decoder_input = batch['decoder_input'].to(device) # (B, seq_len)
             encoder_mask = batch['encoder_mask'].to(device) # (B, 1, 1, seq_len)
@@ -330,7 +328,8 @@ if __name__ == '__main__':
 
     train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt = get_ds(config)
     model = get_model(config, tokenizer_src.get_vocab_size(), tokenizer_tgt.get_vocab_size()).to(device)
-    vizualize_model(model)
+    vizualize_model_by_keys(model)
+    print(model)
 
     train_model(config)
 
