@@ -47,7 +47,11 @@ def get_or_build_tokenizer(config, ds, lang):
 
 def get_ds(config):
     # It only has the train split, so we divide it overselves - from huggingface
-    ds_raw = load_dataset(f"{config['datasource']}", f"{config['lang_src']}-{config['lang_tgt']}", split='train')
+    ds_raw = load_dataset(
+        f"{config['datasource']}",
+        f"{config['lang_src']}-{config['lang_tgt']}",
+        split='train'
+    )
 
     # Build tokenizers
     tokenizer_src = get_or_build_tokenizer(config, ds_raw, config['lang_src'])
@@ -147,11 +151,11 @@ def train_model(config):
     #device = 'cpu'
     print("Using device:", device)
 
-    if (device == 'cuda'):
+    if device == 'cuda':
         print(f"Device name: {torch.cuda.get_device_name(device.index)}")
         print(f"Device memory: {torch.cuda.get_device_properties(device.index).total_memory / 1024 ** 3} GB")
-    elif (device == 'mps'):
-        print(f"Device name: <mps>")
+    elif device == 'mps':
+        print(f"Device name: <mps>")  # Multi-Process Service (MPS): MPS allows multiple CUDA applications to share a single GPU
     else:
         print("NOTE: If you have a GPU, consider using it for training.")
         print("      On a Windows machine with NVidia GPU, check this video: https://www.youtube.com/watch?v=GMSjDTU8Zlc")
@@ -190,10 +194,10 @@ def train_model(config):
 
     for epoch in range(initial_epoch, config['num_epochs']):
         torch.cuda.empty_cache()
-        model.train()
+        model.train()  # get model back to a training mode (it was switched to eval during validation)
         batch_iterator = tqdm(train_dataloader, desc=f"Processing Epoch {epoch:02d}")
-        for batch in batch_iterator:
 
+        for batch in batch_iterator:
             encoder_input = batch['encoder_input'].to(device) # (b, seq_len)
             decoder_input = batch['decoder_input'].to(device) # (B, seq_len)
             encoder_mask = batch['encoder_mask'].to(device) # (B, 1, 1, seq_len)
