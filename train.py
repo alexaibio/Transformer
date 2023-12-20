@@ -20,6 +20,25 @@ import os
 from pathlib import Path
 import torchmetrics
 from torch.utils.tensorboard import SummaryWriter
+from utils import vizualize_model_by_keys
+
+# Define the device
+device = "cuda" if torch.cuda.is_available() else "mps" if torch.has_mps or torch.backends.mps.is_available() else "cpu"
+# device = 'cpu'
+print("Using device:", device)
+
+if (device == 'cuda'):
+    print(f"Device name: {torch.cuda.get_device_name(device.index)}")
+    print(f"Device memory: {torch.cuda.get_device_properties(device.index).total_memory / 1024 ** 3} GB")
+elif (device == 'mps'):
+    print(f"Device name: <mps>")
+else:
+    print("NOTE: If you have a GPU, consider using it for training.")
+    print("      On a Windows machine with NVidia GPU, check this video: https://www.youtube.com/watch?v=GMSjDTU8Zlc")
+    print(
+        "      On a Mac machine, run: pip3 install --pre torch torchvision torchaudio torchtext --index-url https://download.pytorch.org/whl/nightly/cpu")
+device = torch.device(device)
+
 
 
 def get_all_sentences(ds, lang):
@@ -47,7 +66,11 @@ def get_or_build_tokenizer(config, ds, lang):
 
 def get_ds(config):
     # It only has the train split, so we divide it overselves - from huggingface
-    ds_raw = load_dataset(f"{config['datasource']}", f"{config['lang_src']}-{config['lang_tgt']}", split='train')
+    ds_raw = load_dataset(
+        f"{config['datasource']}",
+        f"{config['lang_src']}-{config['lang_tgt']}",
+        split='train'
+    )
 
     # Build tokenizers
     tokenizer_src = get_or_build_tokenizer(config, ds_raw, config['lang_src'])
@@ -99,18 +122,27 @@ def get_model(config, vocab_src_len, vocab_tgt_len):
 
 
 def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_len, device):
+    '''
+    for inference we have to run encoder only once!
+    for generation we:
+    - compute encoder once, then generate first tocken by decoder, then add it ro decored input etc
+    - generation stops when we reach eos or max_length
+    '''
+
     sos_idx = tokenizer_tgt.token_to_id('[SOS]')
     eos_idx = tokenizer_tgt.token_to_id('[EOS]')
 
     # Precompute the encoder output and reuse it for every step
     encoder_output = model.encode(source, source_mask)
-    # Initialize the decoder input with the sos token
+
+    # Initialize the decoder input with the sos token ( 1, 1) batch x first token
     decoder_input = torch.empty(1, 1).fill_(sos_idx).type_as(source).to(device)
+
     while True:
         if decoder_input.size(1) == max_len:
             break
 
-        # build mask for target
+        # build mask for target: we dont want decoder to see future tokens
         decoder_mask = causal_mask(decoder_input.size(1)).type_as(source_mask).to(device)
 
         # calculate output
@@ -118,33 +150,21 @@ def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_
 
         # get next token
         prob = model.project(out[:, -1])
-        _, next_word = torch.max(prob, dim=1)
+        _, next_word = torch.max(prob, dim=1)  # get one by greedy search
+
+        # we add new token to the end of decoder input
         decoder_input = torch.cat(
-            [decoder_input, torch.empty(1, 1).type_as(source).fill_(next_word.item()).to(device)], dim=1
+            [decoder_input, torch.empty(1, 1).type_as(source).fill_(next_word.item()).to(device)],
+            dim=1
         )
 
         if next_word == eos_idx:
             break
 
-    return decoder_input.squeeze(0)
+    return decoder_input.squeeze(0)   # wqueeze to remove the batch dimension
 
 
 def train_model(config):
-    # Define the device
-    device = "cuda" if torch.cuda.is_available() else "mps" if torch.has_mps or torch.backends.mps.is_available() else "cpu"
-    #device = 'cpu'
-    print("Using device:", device)
-
-    if (device == 'cuda'):
-        print(f"Device name: {torch.cuda.get_device_name(device.index)}")
-        print(f"Device memory: {torch.cuda.get_device_properties(device.index).total_memory / 1024 ** 3} GB")
-    elif (device == 'mps'):
-        print(f"Device name: <mps>")
-    else:
-        print("NOTE: If you have a GPU, consider using it for training.")
-        print("      On a Windows machine with NVidia GPU, check this video: https://www.youtube.com/watch?v=GMSjDTU8Zlc")
-        print("      On a Mac machine, run: pip3 install --pre torch torchvision torchaudio torchtext --index-url https://download.pytorch.org/whl/nightly/cpu")
-    device = torch.device(device)
 
     # Make sure the weights folder exists
     Path(f"{config['datasource']}_{config['model_folder']}").mkdir(parents=True, exist_ok=True)
@@ -178,10 +198,10 @@ def train_model(config):
 
     for epoch in range(initial_epoch, config['num_epochs']):
         torch.cuda.empty_cache()
-        model.train()
+        model.train()  # get model back to a training mode (it was switched to eval during validation)
         batch_iterator = tqdm(train_dataloader, desc=f"Processing Epoch {epoch:02d}")
-        for batch in batch_iterator:
 
+        for batch in batch_iterator:
             encoder_input = batch['encoder_input'].to(device) # (b, seq_len)
             decoder_input = batch['decoder_input'].to(device) # (B, seq_len)
             encoder_mask = batch['encoder_mask'].to(device) # (B, 1, 1, seq_len)
@@ -213,7 +233,10 @@ def train_model(config):
             global_step += 1
 
         # Run validation at the end of every epoch
-        run_validation(model, val_dataloader, tokenizer_src, tokenizer_tgt, config['seq_len'], device, lambda msg: batch_iterator.write(msg), global_step, writer)
+        run_validation(
+            model, val_dataloader, tokenizer_src, tokenizer_tgt, config['seq_len'], device,
+            lambda msg: batch_iterator.write(msg), global_step, writer
+        )
 
         # Save the model at the end of every epoch
         model_filename = get_weights_file_path(config, f"{epoch:02d}")
@@ -225,8 +248,14 @@ def train_model(config):
         }, model_filename)
 
 
-def run_validation(model, validation_ds, tokenizer_src, tokenizer_tgt, max_len, device, print_msg, global_step, writer,
-                   num_examples=2):
+def run_validation(
+        model, validation_ds, tokenizer_src, tokenizer_tgt, max_len, device,
+        print_msg, global_step, writer, num_examples=2
+):
+    '''
+    do the inference of num_examples=2 to see how it works
+    return input, output and expected output to print it into console
+    '''
     model.eval()
     count = 0
 
@@ -243,15 +272,14 @@ def run_validation(model, validation_ds, tokenizer_src, tokenizer_tgt, max_len, 
         # If we can't get the console width, use 80 as default
         console_width = 80
 
-    with torch.no_grad():
+    with torch.no_grad():   # disable gradient calculation
         for batch in validation_ds:
             count += 1
             encoder_input = batch["encoder_input"].to(device)  # (b, seq_len)
             encoder_mask = batch["encoder_mask"].to(device)  # (b, 1, 1, seq_len)
 
-            # check that the batch size is 1
-            assert encoder_input.size(
-                0) == 1, "Batch size must be 1 for validation"
+            # check that the batch size is 1 (it should be always 1 for validation ds)
+            assert encoder_input.size(0) == 1, "Batch size must be 1 for validation"
 
             model_out = greedy_decode(model, encoder_input, encoder_mask, tokenizer_src, tokenizer_tgt, max_len, device)
 
@@ -264,6 +292,8 @@ def run_validation(model, validation_ds, tokenizer_src, tokenizer_tgt, max_len, 
             predicted.append(model_out_text)
 
             # Print the source, target and model output
+            # we use print_msg because during tqdm is not recomended to use print
+            # instead write into batch_iterator = tqdm(train_dataloader, desc=f"Processing Epoch {epoch:02d}")
             print_msg('-' * console_width)
             print_msg(f"{f'SOURCE: ':>12}{source_text}")
             print_msg(f"{f'TARGET: ':>12}{target_text}")
@@ -274,6 +304,7 @@ def run_validation(model, validation_ds, tokenizer_src, tokenizer_tgt, max_len, 
                 break
 
     if writer:
+        # use the tensorboard
         # Evaluate the character error rate
         # Compute the char error rate
         metric = torchmetrics.CharErrorRate()
@@ -299,6 +330,11 @@ if __name__ == '__main__':
     config = get_config()
 
     #train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt = get_ds(get_config())
+
+    train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt = get_ds(config)
+    model = get_model(config, tokenizer_src.get_vocab_size(), tokenizer_tgt.get_vocab_size()).to(device)
+    vizualize_model_by_keys(model)
+    print(model)
 
     train_model(config)
 
