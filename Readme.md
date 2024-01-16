@@ -14,6 +14,10 @@ https://github.com/hkproj/pytorch-transformer
 - d_model - embeddings size
 - h - number of head of attention
 
+# TODO
+- replicate with FastTransformers
+- replicate with FlashAttention
+
 # Train pipeline
 - get_ds(config) 
   - ds_raw = load_dataset (from haggingface.datasets) - ('opus_books', 'en-ru'), 17496x2
