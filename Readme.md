@@ -1,14 +1,18 @@
 # Simple transformer replication of 'Attention is all you need' article
 Based on 2-language data train a foundational transformer on generative settings
 
-Training corpus: a numer of 2-language sentences from opus-books
+Training corpus: a number of 2-language sentences from opus-books
 
 ## inspired by
+https://www.youtube.com/watch?v=ISNdQcPhsts
 https://github.com/hkproj/pytorch-transformer
 
 
 # CUDA installation
 
+# Abbreviation
+- d_model - embeddings size
+- h - number of head of attention
 
 # Train pipeline
 - get_ds(config) 
@@ -18,3 +22,8 @@ https://github.com/hkproj/pytorch-transformer
   - tokenizer_src.encode
   - return train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt
 - dfdfd
+
+
+# Main blocks
+- model.py - low level PyTorch implementation
+- model_short.py - hight level PyTorch implementation (Encoder and decoder are built-in functions)

@@ -58,7 +58,7 @@ class PositionalEncoding(nn.Module):
         self.register_buffer('pe', pe)
 
     def forward(self, x):
-        # requires_grad_(False) потмоу что мы не хотим учить позицию как парамерт - опять
+        # requires_grad_(False) потому что мы не хотим учить позицию как параметр - опять
         x = x + (self.pe[:, :x.shape[1], :]).requires_grad_(False) # (batch, seq_len, d_model)
         return self.dropout(x)
 
@@ -159,12 +159,18 @@ class MultiHeadAttentionBlock(nn.Module):
 
 
 class ResidualConnection(nn.Module):
+    """
+    Skip connection - we skip attention layer and add inoput to output of attention
+    """
     def __init__(self, features: int, dropout: float) -> None:
         super().__init__()
         self.dropout = nn.Dropout(dropout)
         self.norm = LayerNormalization(features)
 
     def forward(self, x, sublayer):
+        """
+        sublayer is a previous layer
+        """
         return x + self.dropout(sublayer(self.norm(x)))
 
 
@@ -180,13 +186,16 @@ class EncoderBlock(nn.Module):
         super().__init__()
         self.self_attention_block = self_attention_block
         self.feed_forward_block = feed_forward_block
+        # here is two residual connections
         self.residual_connections = nn.ModuleList([ResidualConnection(features, dropout) for _ in range(2)])
 
     def forward(self, x, src_mask):
         '''
         In PyTorch, the forward method is automatically called when you invoke an instance of a nn.Module.
         '''
-        x = self.residual_connections[0](x, lambda x: self.self_attention_block(x, x, x, src_mask))
+        # By using a lambda function, you can defer the evaluation until the lambda function is called within self.residual_connections[0]
+        # This can be beneficial if you want to control when the computation is performed.
+        x = self.residual_connections[0](x, lambda x: self.self_attention_block(q=x, k=x, v=x, mask=src_mask))
         x = self.residual_connections[1](x, self.feed_forward_block)
         return x
 
@@ -203,6 +212,7 @@ class Encoder(nn.Module):
     def forward(self, x, mask):
         for layer in self.layers:
             x = layer(x, mask)
+        # Q: why do we need one more Normalization? we already have on at the and of each block...
         return self.norm(x)
 
 
