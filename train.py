@@ -157,7 +157,7 @@ def train_model(config):
         )
 
         # Save the model at the end of every epoch
-        model_filename = get_weights_file_path(config, f"{epoch:02d}")
+        model_filename = get_weights_file_path(config, f"{epoch:02d}_{loss.item():5.2f}")
         torch.save({
             'epoch': epoch,
             'model_state_dict': model.state_dict(),
