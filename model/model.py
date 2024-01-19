@@ -3,7 +3,7 @@
 import torch
 import torch.nn as nn
 import math
-from layers_custom import *
+from model.layers_custom import *
 
 
 
