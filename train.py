@@ -5,7 +5,7 @@ from tokenizers.models import WordLevel
 from tokenizers.trainers import WordLevelTrainer
 from tokenizers.pre_tokenizers import Whitespace
 
-from model import build_transformer
+from model.model import build_transformer
 from dataset import BilingualDataset, causal_mask
 from config import get_config, get_weights_file_path, latest_weights_file_path
 
@@ -196,6 +196,7 @@ def train_model(config):
     # make PAD does not contribute to the loss
     loss_fn = nn.CrossEntropyLoss(ignore_index=tokenizer_src.token_to_id('[PAD]'), label_smoothing=0.1).to(device)
 
+    # TRAIN LOOP
     for epoch in range(initial_epoch, config['num_epochs']):
         torch.cuda.empty_cache()
         model.train()  # get model back to a training mode (it was switched to eval during validation)
@@ -329,13 +330,15 @@ if __name__ == '__main__':
     warnings.filterwarnings("ignore")
     config = get_config()
 
-    #train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt = get_ds(get_config())
-
+    # check dataloaders
     train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt = get_ds(config)
+
+    # vizualize model
     model = get_model(config, tokenizer_src.get_vocab_size(), tokenizer_tgt.get_vocab_size()).to(device)
     vizualize_model_by_keys(model)
     print(model)
 
+    # train odel
     train_model(config)
 
     print()
