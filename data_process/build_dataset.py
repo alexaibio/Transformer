@@ -3,30 +3,36 @@ from torch.utils.data import DataLoader, random_split
 from data_process.dataset import BilingualDataset
 
 # Huggingface datasets and tokenizers
-from datasets import load_dataset
+from datasets import load_dataset, load_dataset_builder
 from tokenizers import Tokenizer
 from tokenizers.models import WordLevel
 from tokenizers.trainers import WordLevelTrainer
 from tokenizers.pre_tokenizers import Whitespace
 
 
-def get_all_sentences(ds, lang):
+def _get_all_sentences(ds, lang):
+    '''
+    Get all sentences from out dataset
+    We need generator here, because...
+    '''
     for item in ds:
         yield item['translation'][lang]
 
 
-def get_or_build_tokenizer(config, ds, lang):
+def _get_or_build_tokenizer(config, ds, lang):
+
+    # save tokenizer to this file
     tokenizer_path = Path(config['tokenizer_file'].format(lang))
 
     if not Path.exists(tokenizer_path):
         # Most code taken from: https://huggingface.co/docs/tokenizers/quicktour
-        # if tokenizer see a word not in vocabulary it substitutes it with UNK
-        tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
-        tokenizer.pre_tokenizer = Whitespace()   # split by white space
+        # we are using the simpliest tokenizer which split sentence by words
+        tokenizer = Tokenizer(WordLevel(unk_token="[UNK]")) # if tokenizer see a word not in vocabulary it substitutes it with UNK
+        tokenizer.pre_tokenizer = Whitespace()   # split sentence by white space
 
         # [SOS] - start of sentence / [EOS] - end of sentence
         trainer = WordLevelTrainer(special_tokens=["[UNK]", "[PAD]", "[SOS]", "[EOS]"], min_frequency=2)
-        tokenizer.train_from_iterator(get_all_sentences(ds, lang), trainer=trainer)
+        tokenizer.train_from_iterator(_get_all_sentences(ds, lang), trainer=trainer)
         tokenizer.save(str(tokenizer_path))
     else:
         tokenizer = Tokenizer.from_file(str(tokenizer_path))
@@ -34,23 +40,31 @@ def get_or_build_tokenizer(config, ds, lang):
 
 
 def get_ds(config):
-    # It only has the train split, so we divide it overselves - from huggingface
+    # explore dataset
+    ds_builder = load_dataset_builder(
+        path=f"{config['datasource']}",
+        name=f"{config['lang_src']}-{config['lang_tgt']}"
+    )
+    print("--------------- using datasets from Hugging Face:")
+    print(ds_builder.info.description)
+
+    # huggingface Datasets is a library for easily accessing and sharing datasets
     ds_raw = load_dataset(
-        f"{config['datasource']}",
-        f"{config['lang_src']}-{config['lang_tgt']}",
+        path=f"{config['datasource']}", # opus_books
+        name=f"{config['lang_src']}-{config['lang_tgt']}",  # en-ru
         split='train'
     )
 
     # Build tokenizers
-    tokenizer_src = get_or_build_tokenizer(config, ds_raw, config['lang_src'])
-    tokenizer_tgt = get_or_build_tokenizer(config, ds_raw, config['lang_tgt'])
+    tokenizer_src = _get_or_build_tokenizer(config, ds_raw, config['lang_src'])
+    tokenizer_tgt = _get_or_build_tokenizer(config, ds_raw, config['lang_tgt'])
 
     # Keep 90% for training, 10% for validation
     train_ds_size = int(0.9 * len(ds_raw))
     val_ds_size = len(ds_raw) - train_ds_size
     train_ds_raw, val_ds_raw = random_split(ds_raw, [train_ds_size, val_ds_size])
 
-    # create tensors
+    # out of HGF DataSets create a complete input/outpu tensors and a label tensor with masks
     train_ds = BilingualDataset(
         train_ds_raw,
         tokenizer_src, tokenizer_tgt,

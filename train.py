@@ -250,12 +250,12 @@ if __name__ == '__main__':
     # check dataloaders
     train_dataloader, val_dataloader, tokenizer_src, tokenizer_tgt = get_ds(config)
 
-    # vizualize model
+    # visualize model
     model = get_model(config, tokenizer_src.get_vocab_size(), tokenizer_tgt.get_vocab_size()).to(device)
     vizualize_model_by_keys(model)
     print(model)
 
-    # train odel
+    ######  train Model
     train_model(config)
 
     print()

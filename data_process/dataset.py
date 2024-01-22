@@ -4,6 +4,9 @@ from torch.utils.data import Dataset
 
 
 class BilingualDataset(Dataset):
+    '''
+    Out of Datasets build a set of encoder/decover vector and a label vector
+    '''
     def __init__(self, ds, tokenizer_src, tokenizer_tgt, src_lang, tgt_lang, seq_len):
         super().__init__()
         self.seq_len = seq_len
@@ -31,15 +34,15 @@ class BilingualDataset(Dataset):
         dec_input_tokens = self.tokenizer_tgt.encode(tgt_text).ids
 
         # Add sos, eos and padding to each sentence
-        enc_num_padding_tokens = self.seq_len - len(enc_input_tokens) - 2  # We will add <s> and </s>
+        enc_num_padding_tokens = self.seq_len - len(enc_input_tokens) - 2  # We will add <s> and </s> later on
         # We will only add <s>, and </s> only on the label
-        dec_num_padding_tokens = self.seq_len - len(dec_input_tokens) - 1
+        dec_num_padding_tokens = self.seq_len - len(dec_input_tokens) - 1   # we will only add <s>
 
         # Make sure the number of padding tokens is not negative. If it is, the sentence is too long
         if enc_num_padding_tokens < 0 or dec_num_padding_tokens < 0:
             raise ValueError("Sentence is too long")
 
-        # Add <s> and </s> token
+        # assemble input vector: Add <s> and </s> token, padding
         encoder_input = torch.cat(
             [
                 self.sos_token,
@@ -50,7 +53,7 @@ class BilingualDataset(Dataset):
             dim=0,
         )
 
-        # Add only <s> token
+        # Add only <s> token - why there is no eos?
         decoder_input = torch.cat(
             [
                 self.sos_token,
