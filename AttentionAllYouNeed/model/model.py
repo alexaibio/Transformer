@@ -1,9 +1,6 @@
 # https://github.com/hkproj/pytorch-transformer/blob/main/model.py
 
-import torch
-import torch.nn as nn
-import math
-from model.layers_custom import *
+from AttentionAllYouNeed.model.layers_custom import *
 
 
 

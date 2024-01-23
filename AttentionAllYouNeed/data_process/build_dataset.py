@@ -1,6 +1,6 @@
 from pathlib import Path
 from torch.utils.data import DataLoader, random_split
-from data_process.dataset import BilingualDataset
+from AttentionAllYouNeed.data_process.dataset import BilingualDataset
 
 # Huggingface datasets and tokenizers
 from datasets import load_dataset, load_dataset_builder
