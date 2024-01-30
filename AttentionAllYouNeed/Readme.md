@@ -1,14 +1,14 @@
-# Simple transformer replication of 'Attention is all you need' article
-Based on 2-language data train a foundational transformer on generative settings
+# 'Attention is all you need' replication
+Based on 2-language data train a foundational transformer on generative settings.
 
 Training corpus: a number of 2-language sentences from opus-books
+
+Encoder-decored architecture for language translation
 
 ## inspired by
 https://www.youtube.com/watch?v=ISNdQcPhsts
 https://github.com/hkproj/pytorch-transformer
 
-
-# CUDA installation
 
 # Abbreviation
 - d_model - embeddings size
@@ -30,4 +30,4 @@ https://github.com/hkproj/pytorch-transformer
 
 # Main blocks
 - model.py - low level PyTorch implementation
-- model_short.py - hight level PyTorch implementation (Encoder and decoder are built-in functions)
+- model_short.py - high level PyTorch implementation (Encoder and decoder are built-in functions)
