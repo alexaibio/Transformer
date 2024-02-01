@@ -2,19 +2,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 torch.manual_seed(1337)
-
-
-def get_batch(split, train_data, val_data, batch_size, block_size):
-    # generate a small batch of data of inputs x and targets y
-    data = train_data if split == 'train' else val_data
-
-    # generate 4 starting indexes to take a block of size 8
-    ix = torch.randint(len(data) - block_size, (batch_size,))
-
-    # take those 4 batches x block size, then convert list of tensors into one tensor
-    x = torch.stack([data[i:i+block_size] for i in ix])
-    y = torch.stack([data[i+1:i+block_size+1] for i in ix])
-    return x, y
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 class BigramLanguageModel(nn.Module):
@@ -67,7 +55,7 @@ class BigramLanguageModel(nn.Module):
     def train(self, train_data, val_data, batch_size, block_size):
         optimizer = torch.optim.AdamW(self.parameters(), lr=1e-3)
 
-        for steps in range(70000):  # increase number of steps for good results...
+        for steps in range(100000):  # increase number of steps for good results...
             # sample a batch of data
             xb, yb = get_batch('train', train_data, val_data, batch_size=batch_size, block_size=block_size)
 
