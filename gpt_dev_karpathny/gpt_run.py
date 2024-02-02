@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from gpt import GPTLanguageModel
-from load_data import get_batch
-from _encode_decode import decode
+from load_data import chars, text, vocab_size, get_batch
+from _encode_decode import decode, encode
 
 
 @torch.no_grad()
@@ -34,6 +34,17 @@ n_head = 6
 n_layer = 6
 dropout = 0.2
 
+## text -> Tensor
+data_tensor = torch.tensor(encode(text), dtype=torch.long)
+print(data_tensor.shape, data_tensor.dtype)
+
+
+### train / validation
+n = int(0.9 * len(data_tensor))
+train_data = data_tensor[:n]
+val_data = data_tensor[n:]
+
+
 #### Load gpt model
 model = GPTLanguageModel()
 m = model.to(device)
@@ -50,13 +61,13 @@ for iter in range(max_iters):
         print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
     # sample a batch of data
-    xb, yb = get_batch('train')
+    xb, yb = get_batch('train', train_data, val_data, batch_size, block_size)
 
     # evaluate the loss
     logits, loss = model(xb, yb)
     optimizer.zero_grad(set_to_none=True)
-    loss.backward()
-    optimizer.step()
+    loss.backward()     # compute gradients
+    optimizer.step()    # update parameters
 
 # generate from the model
 context = torch.zeros((1, 1), dtype=torch.long, device=device)

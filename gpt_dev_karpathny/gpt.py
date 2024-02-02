@@ -112,7 +112,7 @@ class GPTLanguageModel(nn.Module):
         self.lm_head = nn.Linear(n_embd, vocab_size)
 
         # better init, not covered in the original GPT video, but important, will cover in followup video
-        self.apply(self._init_weights)
+        self.apply(self._init_weights)  # apply to all layers above
 
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):

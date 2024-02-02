@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+from load_data import get_batch
 torch.manual_seed(1337)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
