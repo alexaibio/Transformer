@@ -1,6 +1,4 @@
 import torch
-import torch.nn as nn
-from torch.nn import functional as F
 from gpt import GPTLanguageModel
 from load_data import chars, text, vocab_size, get_batch
 from _encode_decode import decode, encode

@@ -51,7 +51,7 @@ xb, yb = get_batch(split='train', train_data=train_data, val_data=val_data, batc
 
 ##########################################################
 ##### BiGram Language Model
-# generate text with untrained model with random weights - generates garbage
+### generate text with untrained model with random weights - generates garbage
 model = BigramLanguageModel(vocab_size)
 m = model.to(device)
 logits, loss = m(xb, yb)    # logits (32,65), loss=single number
@@ -64,7 +64,7 @@ generated_text = m.generate(
 generated_text_lst = generated_text[0].tolist()
 print(f'\n GENERATED Untrained TEXT: {decode(generated_text_lst)}')
 
-# train this model on data
+### train this model on data
 m.train(train_data, val_data, batch_size, block_size)
 generated_text = m.generate(
     idx=torch.zeros((1, 1), dtype=torch.long, device=device),  # starting context, just 1 in our case
@@ -73,4 +73,5 @@ generated_text = m.generate(
 generated_text_lst = generated_text[0].tolist()
 print(f'\n GENERATED trained TEXT: {decode(generated_text_lst)}')
 
+# NOTE: we dont use here multiple conext, only one symbol to one symbol
 

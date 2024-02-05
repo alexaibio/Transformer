@@ -11,7 +11,7 @@ class BigramLanguageModel(nn.Module):
         super().__init__()
         # each token directly reads off the logits for the next token from a lookup table
         # embedding layer returns embeddings vectors by indexes
-        self.token_embedding_table = nn.Embedding(vocab_size, vocab_size)
+        self.token_embedding_table = nn.Embedding(vocab_size, vocab_size)   # (Num of tokens, emb) - why?!
 
     def forward(self, idx, targets=None):
         '''
@@ -20,16 +20,20 @@ class BigramLanguageModel(nn.Module):
         # in each B batch we have T=8 indexes of words and get embeddings for it
         # each index/word now is embedding - that is why we have one more dimension - C-channel
         '''
+        # just extract weight which are embeddings in this case,
+        # idx is (B, T) so we add embedding dimension C
         logits = self.token_embedding_table(idx) # (B,T,C) # raw score of prob for next character
 
         if targets is None:
             # TODO: note that logit formal is 3dim in that case not 2-dim as in else clause
             loss = None
         else:
-            # combine all 4 batches into one line
+            # combine all 4 batches into one line, because loss requires one-dim vector
             B, T, C = logits.shape
             logits = logits.view(B*T, C)    # 32x65: 32 example with prob of 65 tokens
             targets = targets.view(B*T)     # 32 targets
+            # logits are embeddings here, tartes are prob of tokens,
+            # cross_entropy - multi-class classification scenario.
             loss = F.cross_entropy(logits, targets)     # single number
 
         return logits, loss
