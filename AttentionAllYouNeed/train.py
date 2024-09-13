@@ -50,7 +50,7 @@ def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_
     eos_idx = tokenizer_tgt.token_to_id('[EOS]')
 
     # Precompute the encoder output and reuse it for every step
-    encoder_output = model.encode(source, source_mask)
+    encoder_output = model.encode_fn(source, source_mask)
 
     # Initialize the decoder input with the sos token ( 1, 1) batch x first token
     decoder_input = torch.empty(1, 1).fill_(sos_idx).type_as(source).to(device)
@@ -63,7 +63,7 @@ def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_
         decoder_mask = causal_mask(decoder_input.size(1)).type_as(source_mask).to(device)
 
         # calculate output
-        out = model.decode(encoder_output, source_mask, decoder_input, decoder_mask)
+        out = model.decode_fn(encoder_output, source_mask, decoder_input, decoder_mask)
 
         # get next token
         prob = model.project(out[:, -1])
@@ -203,7 +203,7 @@ def run_validation(
 
             source_text = batch["src_text"][0]
             target_text = batch["tgt_text"][0]
-            model_out_text = tokenizer_tgt.decode(model_out.detach().cpu().numpy())
+            model_out_text = tokenizer_tgt.decode_fn(model_out.detach().cpu().numpy())
 
             source_texts.append(source_text)
             expected.append(target_text)

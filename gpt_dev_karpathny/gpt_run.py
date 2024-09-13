@@ -1,7 +1,7 @@
 import torch
 from gpt import GPTLanguageModel
-from load_data import chars, text, vocab_size, get_batch
-from _encode_decode import decode, encode
+from load_data import get_batch
+from _encode_decode import decode_fn, encode_fn
 
 
 @torch.no_grad()
@@ -19,7 +19,20 @@ def estimate_loss():
     return out
 
 
-# hyperparameters
+######## Load training text
+with open('./data/input.txt', 'r', encoding='utf-8') as f:
+    text = f.read()
+print("length of dataset in characters: ", len(text))
+
+# here are all the unique characters that occur in this text
+chars = sorted(list(set(text)))
+print(''.join(chars))
+
+vocab_size = len(chars)
+print(vocab_size)
+
+
+###### hyperparameters
 batch_size = 64     # how many independent sequences will we process in parallel?
 block_size = 256    # what is the maximum context length for predictions?
 max_iters = 5000
@@ -33,7 +46,7 @@ n_layer = 6
 dropout = 0.2
 
 ## text -> Tensor
-data_tensor = torch.tensor(encode(text), dtype=torch.long)
+data_tensor = torch.tensor(encode_fn(text), dtype=torch.long)
 print(data_tensor.shape, data_tensor.dtype)
 
 
@@ -47,6 +60,7 @@ val_data = data_tensor[n:]
 model = GPTLanguageModel()
 m = model.to(device)
 print(sum(p.numel() for p in m.parameters())/1e6, 'M parameters')
+
 
 #### TRAIN
 # create a PyTorch optimizer
@@ -69,4 +83,4 @@ for iter in range(max_iters):
 
 # generate from the model
 context = torch.zeros((1, 1), dtype=torch.long, device=device)
-print(decode(m.generate(context, max_new_tokens=500)[0].tolist()))
+print(decode_fn(m.generate(context, max_new_tokens=500)[0].tolist()))
