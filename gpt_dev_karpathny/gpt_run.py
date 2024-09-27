@@ -11,7 +11,8 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 ###### hyperparameters
 batch_size = 64     # how many independent sequences will we process in parallel?
 block_size = 256    # what is the maximum context length for predictions?
-max_iters = 5000
+max_iters = 10000
+
 eval_interval = 500
 learning_rate = 3e-4
 eval_iters = 200
@@ -98,10 +99,10 @@ for iter in range(max_iters):
         print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
 # save the model
-model_save_path = 'gpt2_hedh_model.pth'  # Specify your desired file name and path
+model_save_path = 'gpt2_hedh_model_5000.pth'  # Specify your desired file name and path
 torch.save(m.state_dict(), model_save_path)
 
 
 # generate from the model
 context = torch.zeros((1, 1), dtype=torch.long, device=device)
-print(decode_fn(m.generate(context, max_new_tokens=500)[0].tolist()))
+print(decode_fn(m.generate(context, max_new_tokens=600)[0].tolist()))
