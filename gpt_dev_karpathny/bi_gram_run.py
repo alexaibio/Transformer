@@ -1,14 +1,19 @@
+"""
+Train a  bi-gram npdel
+- tokenization is on charater level, not words!
+"""
+
 import torch
+import tiktoken
 from pathlib import Path
 from bi_gram import BigramLanguageModel
 from load_data import get_batch
-#from _encode_decode import encode_fn, decode_fn
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 torch.manual_seed(1337)
 
 
-### get text, encode it, convert to tensor -> Tensor
-######## Load training text
+
+######## 1 - Load training text
 #with open('./data/input.txt', 'r', encoding='utf-8') as f:
 #    text = f.read()
 text = ""
@@ -22,10 +27,22 @@ print("length of dataset in characters: ", len(text))
 chars = sorted(list(set(text)))
 vocab_size = len(chars)
 
+
+###### 2 - ENCODING
+# Option 1, character level
 stoi = { ch:i for i,ch in enumerate(chars) }
 itos = { i:ch for i,ch in enumerate(chars) }
 encode_fn = lambda s: [stoi[c] for c in s]             # encoder: take a string, output a list of integers
 decode_fn = lambda l: ''.join([itos[i] for i in l])
+
+# sub-words level
+# Option 2: tiktoken is the best implementation from OpenAI of BPE - byte-pair encoding
+enc = tiktoken.get_encoding('gpt2')
+print(enc.n_vocab)              # vocabulary is built in, no need to calculate
+print(enc.encode('Hi there'))
+print(enc.decode([17250, 612]))
+
+# Option 3: google use *sentencepiece*
 
 # encode data and place it into a tensor
 data_tensor = torch.tensor(data=encode_fn(text), dtype=torch.long)
@@ -63,6 +80,7 @@ for t in range(block_size):
     target = y[t]  # y is already shifted
     print(f"when input is {context} the target: {target}")
 
+
 ###### test batch: create input tensor with batches
 batch_size = 4  # B (batch) -  how many independent sequences will we process in parallel?
 block_size = 8  # T (time) -  what is the maximum context length for predictions, block_size
@@ -89,7 +107,7 @@ generated_text = m.generate(
     max_new_tokens=50
 )
 generated_text_lst = generated_text[0].tolist()
-print(f'\n GENERATED Untrained TEXT: {decode_fn(generated_text_lst)}')
+print(f'\n GENERATED Untrained TEXT: \n {decode_fn(generated_text_lst)} \n')
 
 
 ### TRAIN: train this model on data
@@ -103,5 +121,5 @@ print(f'\n GENERATED trained TEXT: \n {decode_fn(generated_text_lst)}')
 
 print()
 
-# NOTE: we dont use here multiple conext, only one symbol to one symbol
+
 

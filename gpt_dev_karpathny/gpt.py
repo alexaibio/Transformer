@@ -2,17 +2,10 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 torch.manual_seed(1337)
-from load_data import text, vocab_size
-
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 # hyperparameters
-batch_size = 64 # how many independent sequences will we process in parallel?
 block_size = 256 # what is the maximum context length for predictions?
-max_iters = 5000
-eval_interval = 500
-learning_rate = 3e-4
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-eval_iters = 200
 n_embd = 384
 n_head = 6
 n_layer = 6
@@ -47,7 +40,7 @@ class Head(nn.Module):
 
         # perform the weighted aggregation of the values
         v = self.value(x)   # (B,T,hs)
-        out = wei @ v   # (B, T, T) @ (B, T, hs) -> (B, T, hs)
+        out = wei @ v       # (B, T, T) @ (B, T, hs) -> (B, T, hs)
         return out
 
 
@@ -102,7 +95,7 @@ class Block(nn.Module):
 
 class GPTLanguageModel(nn.Module):
 
-    def __init__(self):
+    def __init__(self, vocab_size):
         super().__init__()
         # each token directly reads off the logits for the next token from a lookup table
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)       # ( tokens, C)

@@ -11,3 +11,6 @@
 - number of heads: how many parallel attention layers or "heads" the self-attention mechanism has
 - 
 
+# How to run
+- bi_gram_run.py: run simple bi-gram language model
+- gtp_run: run simple GPT2 model
