@@ -1,11 +1,12 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+torch.manual_seed(42)
 
 
 ########### EXAMPLE how to communicate with only past
 # toy example illustrating how matrix multiplication can be used for a "weighted aggregation"
-torch.manual_seed(42)
+
 a = torch.tril(torch.ones(3, 3))    # lower triangular with 1
 a = a / torch.sum(a, 1, keepdim=True)
 b = torch.randint(0, 10, size=(3,2)).float()

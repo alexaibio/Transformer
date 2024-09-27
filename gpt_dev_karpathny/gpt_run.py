@@ -80,22 +80,26 @@ m = model.to(device)
 
 #### TRAIN
 # create a PyTorch optimizer
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+optimizer = torch.optim.AdamW(m.parameters(), lr=learning_rate)
 
 for iter in range(max_iters):
     # sample a batch of data
     xb, yb = get_batch('train', train_data, val_data, batch_size, block_size)
 
     # evaluate the loss
-    logits, loss = model(xb, yb)
+    logits, loss = m(xb, yb)
     optimizer.zero_grad(set_to_none=True)
     loss.backward()         # compute gradients
     optimizer.step()        # update parameters
 
     # every once in a while evaluate the loss on train and val sets
     if iter % eval_interval == 0 or iter == max_iters - 1:
-        losses = _estimate_batch_loss(model, train_data, val_data, batch_size, block_size)
+        losses = _estimate_batch_loss(m, train_data, val_data, batch_size, block_size)
         print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+
+# save the model
+model_save_path = 'gpt2_hedh_model.pth'  # Specify your desired file name and path
+torch.save(m.state_dict(), model_save_path)
 
 
 # generate from the model
