@@ -19,6 +19,7 @@ eval_iters = 200
 
 
 
+
 @torch.no_grad()
 def _estimate_batch_loss(model, train_data, val_data, batch_size, block_size):
     out = {}
@@ -99,7 +100,7 @@ for iter in range(max_iters):
         print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
 # save the model
-model_save_path = 'gpt2_hedh_model_5000.pth'  # Specify your desired file name and path
+model_save_path = 'gpt2_hedh_model.pth'  # Specify your desired file name and path
 torch.save(m.state_dict(), model_save_path)
 
 
