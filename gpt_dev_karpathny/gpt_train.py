@@ -5,33 +5,34 @@
 import torch
 from pathlib import Path
 from gpt import GPTLanguageModel
-from load_data import get_batch
+from load_data import get_random_batch
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 ###### hyperparameters
 batch_size = 64     # how many independent sequences will we process in parallel?
 block_size = 256    # what is the maximum context length for predictions?
+
 max_iters = 10000
+learning_rate = 3e-4
 
 eval_interval = 500
-learning_rate = 3e-4
 eval_iters = 200
-
-
 
 
 @torch.no_grad()
 def _estimate_batch_loss(model, train_data, val_data, batch_size, block_size):
     out = {}
+
     model.eval()
     for split in ['train', 'val']:
         losses = torch.zeros(eval_iters)
         for k in range(eval_iters):
-            X, Y = get_batch(split, train_data, val_data, batch_size, block_size)
+            X, Y = get_random_batch(split, train_data, val_data, batch_size, block_size)
             logits, loss = model(X, Y)
             losses[k] = loss.item()
-        out[split] = losses.mean()
+        out[split] = losses.mean()      # average losses over eval_iters
     model.train()
+
     return out
 
 
@@ -57,6 +58,7 @@ decode_fn = lambda l: ''.join([itos[i] for i in l])
 
 
 ####  text -> Tensor
+# TBD: add another tokenizer
 data_tensor = torch.tensor(encode_fn(text), dtype=torch.long)
 print(data_tensor.shape, data_tensor.dtype)
 
@@ -86,7 +88,7 @@ optimizer = torch.optim.AdamW(m.parameters(), lr=learning_rate)
 
 for iter in range(max_iters):
     # sample a batch of data
-    xb, yb = get_batch('train', train_data, val_data, batch_size, block_size)
+    xb, yb = get_random_batch('train', train_data, val_data, batch_size, block_size)
 
     # evaluate the loss
     logits, loss = m(xb, yb)

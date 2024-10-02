@@ -7,7 +7,7 @@ import torch
 import tiktoken
 from pathlib import Path
 from bi_gram import BigramLanguageModel
-from load_data import get_batch
+from load_data import get_random_batch
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 torch.manual_seed(1337)
 
@@ -88,7 +88,7 @@ block_size = 8  # T (time) -  what is the maximum context length for predictions
 
 # xb = [4,8], yb = [4,8]-shifted,  [batch, block]
 # get 4 batches of 8 size blocks at random point in train dara
-xb, yb = get_batch(split='train', train_data=train_data, val_data=val_data, batch_size=batch_size, block_size=block_size)
+xb, yb = get_random_batch(split='train', train_data=train_data, val_data=val_data, batch_size=batch_size, block_size=block_size)
 # NOTE: one context/target rows include 8 training examples, so in this 4x8 tensor we have 32 examples
 
 

@@ -3,11 +3,11 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 
-def get_batch(split, train_data, val_data, batch_size, block_size):
+def get_random_batch(split, train_data, val_data, batch_size, block_size):
     # generate a small batch of data of inputs x and targets y
     data = train_data if split == 'train' else val_data
 
-    # generate 4 starting indexes to take a block of size batch_size=8
+    # generate random 64 (block size) starting indexes to take a block of size batch_size=8
     ix = torch.randint(high=(len(data) - block_size), size=(batch_size,))
 
     # take those 4 batches x block size, then convert list of tensors into one tensor
@@ -19,4 +19,4 @@ def get_batch(split, train_data, val_data, batch_size, block_size):
 
 
 if __name__ == '__main__':
-    x, y = get_batch()
+    x, y = get_random_batch()

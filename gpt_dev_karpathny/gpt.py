@@ -16,6 +16,7 @@ class Head(nn.Module):
     """ one head of self-attention """
 
     def __init__(self, head_size):
+        # NOTE: head size is a length of context: sentence size (?)
         super().__init__()
         # in example it was Linear(C, head_size)
         self.key = nn.Linear(n_embd, head_size, bias=False)
@@ -32,13 +33,15 @@ class Head(nn.Module):
         k = self.key(x)   # (B,T,hs)
         q = self.query(x) # (B,T,hs)
 
-        # compute attention scores ("affinities")
+        # штшешфдшяу attention scores ("affinities") with similarity matrix
         wei = q @ k.transpose(-2,-1) * k.shape[-1]**-0.5    # (B, T, hs) @ (B, hs, T) -> (B, T, T)
+
+        # masking the future (see math trick)
         wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))    # (B, T, T)
         wei = F.softmax(wei, dim=-1)    # (B, T, T)
         wei = self.dropout(wei)
 
-        # perform the weighted aggregation of the values
+        # perform the weighted aggregation of the values (multiply by V)
         v = self.value(x)   # (B,T,hs)
         out = wei @ v       # (B, T, T) @ (B, T, hs) -> (B, T, hs)
         return out
@@ -141,14 +144,19 @@ class GPTLanguageModel(nn.Module):
         for _ in range(max_new_tokens):
             # crop idx to the last block_size tokens
             idx_cond = idx[:, -block_size:]
+
             # get the predictions
             logits, loss = self(idx_cond)
+
             # focus only on the last time step
             logits = logits[:, -1, :] # becomes (B, C)
+
             # apply softmax to get probabilities
             probs = F.softmax(logits, dim=-1) # (B, C)
+
             # sample from the distribution
             idx_next = torch.multinomial(probs, num_samples=1) # (B, 1)
+
             # append sampled index to the running sequence
             idx = torch.cat((idx, idx_next), dim=1) # (B, T+1)
         return idx

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from load_data import get_batch
+from load_data import get_random_batch
 torch.manual_seed(1337)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -66,7 +66,7 @@ class BigramLanguageModel(nn.Module):
 
         for steps in range(250000):  # increase number of steps for good results...
             # sample a batch of data
-            xb, yb = get_batch('train', train_data, val_data, batch_size=batch_size, block_size=block_size)
+            xb, yb = get_random_batch('train', train_data, val_data, batch_size=batch_size, block_size=block_size)
 
             # evaluate the loss
             logits, loss = self(xb, yb)
