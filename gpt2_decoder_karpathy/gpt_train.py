@@ -92,7 +92,7 @@ for iter in range(max_iters):
         print(f"step {iter} finished: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
 # save the model
-model_save_path = 'gpt2_hedh_model_15000.pth'  # Specify your desired file name and path
+model_save_path = 'gpt2_hedh_model_10000.pth'  # Specify your desired file name and path
 torch.save(m.state_dict(), model_save_path)
 
 
