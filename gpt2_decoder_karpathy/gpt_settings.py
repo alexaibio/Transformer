@@ -12,7 +12,7 @@ DROPOUT = 0.2
 
 
 ###### training hyperparameters
-batch_size = 128     #64 how many independent sequences will we process in parallel?
+batch_size = 64     #64 how many independent sequences will we process in parallel?
 
 max_iters = 10000
 learning_rate = 2e-4

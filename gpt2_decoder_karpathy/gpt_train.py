@@ -65,8 +65,8 @@ print(sum(p.numel() for p in model.parameters())/1e6, 'Million parameters')
 
 # Print the first embeddings for the first 2 tokens
 first_embeddings = model.token_embedding_table.weight.data[:1]  # Adjust 'embedding' if the name is different
-print('First embeddings for the first 2 tokens:')
-print(first_embeddings)
+#print('First embeddings for the first 1 token:')
+#print(first_embeddings)
 
 # or you can use this one if you have cuda device
 m = model.to(device)
@@ -89,7 +89,7 @@ for iter in range(max_iters):
     # every once in a while evaluate the loss on train and val sets
     if iter % eval_interval == 0 or iter == max_iters - 1:
         losses = _estimate_batch_loss(m, train_data, val_data, batch_size, block_size)
-        print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+        print(f"step {iter} finished: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
 # save the model
 model_save_path = 'gpt2_hedh_model_15000.pth'  # Specify your desired file name and path
