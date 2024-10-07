@@ -1,5 +1,5 @@
 import torch
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
+from gpt_settings import device
 
 
 

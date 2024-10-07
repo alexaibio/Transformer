@@ -6,17 +6,7 @@ import torch
 from pathlib import Path
 from gpt import GPTLanguageModel
 from load_data import get_random_batch
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-###### hyperparameters
-batch_size = 64     # how many independent sequences will we process in parallel?
-block_size = 256    # what is the maximum context length for predictions?
-
-max_iters = 10000
-learning_rate = 3e-4
-
-eval_interval = 500
-eval_iters = 200
+from gpt_settings import *
 
 
 @torch.no_grad()
@@ -102,7 +92,7 @@ for iter in range(max_iters):
         print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
 
 # save the model
-model_save_path = 'gpt2_hedh_model.pth'  # Specify your desired file name and path
+model_save_path = 'gpt2_hedh_model_15000.pth'  # Specify your desired file name and path
 torch.save(m.state_dict(), model_save_path)
 
 

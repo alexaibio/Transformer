@@ -43,7 +43,7 @@ for b in range(B):
 # you can see that every next row of xbow is aggregation of previous rows in x
 
 
-############## Same vectorized
+############## Same but vectorized
 
 # our specialized matrix - wei - weights
 wei = torch.tril(torch.ones(T, T))  # wei for every batch, then broadcasted
