@@ -8,6 +8,7 @@ from gpt import GPTLanguageModel
 from load_data import get_random_batch
 from gpt_settings import *
 
+torch.cuda.empty_cache()
 
 @torch.no_grad()
 def _estimate_batch_loss(model, train_data, val_data, batch_size, block_size):
