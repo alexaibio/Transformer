@@ -6,6 +6,11 @@ https://github.com/NielsRogge/Transformers-Tutorials/blob/master/Mistral/Supervi
 from datasets import load_dataset
 from datasets import DatasetDict
 from transformers import AutoTokenizer
+from huggingface_hub import login
+
+# Enter your Hugging Face token when prompted
+login()
+
 
 
 ####### human DATASET
