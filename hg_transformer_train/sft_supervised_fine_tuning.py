@@ -46,3 +46,29 @@ tokenizer.chat_template = DEFAULT_CHAT_TEMPLATE
 
 
 ######## Apply chat template
+import re
+import random
+from multiprocessing import cpu_count
+
+def apply_chat_template(example, tokenizer):
+    messages = example["messages"]
+    # We add an empty system message if there is none
+    if messages[0]["role"] != "system":
+        messages.insert(0, {"role": "system", "content": ""})
+    example["text"] = tokenizer.apply_chat_template(messages, tokenize=False)
+
+    return example
+
+column_names = list(raw_datasets["train"].features)
+raw_datasets = raw_datasets.map(apply_chat_template,
+                                num_proc=cpu_count(),
+                                fn_kwargs={"tokenizer": tokenizer},
+                                remove_columns=column_names,
+                                desc="Applying chat template",)
+
+# create the splits
+train_dataset = raw_datasets["train"]
+eval_dataset = raw_datasets["test"]
+
+for index in random.sample(range(len(raw_datasets["train"])), 3):
+  print(f"Sample {index} of the processed training set:\n\n{raw_datasets['train'][index]['text']}")
