@@ -11,13 +11,12 @@ from transformers import AutoTokenizer
 ####### human DATASET
 raw_datasets = load_dataset("HuggingFaceH4/ultrachat_200k")
 
-# remove this when done debugging
+# ---- remove this when done debugging
 indices = range(0,100)
-
 dataset_dict = {"train": raw_datasets["train_sft"].select(indices),
                 "test": raw_datasets["test_sft"].select(indices)}
-
 raw_datasets = DatasetDict(dataset_dict)
+# ------------------------------------
 
 example = raw_datasets["train"][0]
 messages = example["messages"]
