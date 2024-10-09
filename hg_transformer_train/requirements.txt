@@ -1,0 +1,11 @@
+torch
+transformers[torch]
+datasets
+bitsandbytes
+trl
+peft
+flash-attn
+
+
+# pip install flash-attn --no-build-isolation
+# pip install -q transformers[torch] datasets
