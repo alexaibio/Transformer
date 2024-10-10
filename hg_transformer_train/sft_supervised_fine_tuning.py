@@ -9,9 +9,9 @@ from transformers import AutoTokenizer
 from huggingface_hub import login
 import re
 import random
-import torch
 from multiprocessing import cpu_count
 from transformers import BitsAndBytesConfig
+import torch
 
 
 # Enter your Hugging Face token when prompted
@@ -90,7 +90,7 @@ for index in random.sample(range(len(raw_datasets["train"])), 3):
 quantization_config = BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype="torch.bfloat16",
+            bnb_4bit_compute_dtype="bfloat16",
 )
 device_map = {"": torch.cuda.current_device()} if torch.cuda.is_available() else None
 
@@ -115,7 +115,7 @@ output_dir = 'data/check_points_Mistral-7B-v0.1'
 
 # based on config
 training_args = TrainingArguments(
-    fp16=True, # specify bf16=True instead when training on GPUs that support bf16
+    bf16=True, # fp16=True or specify bf16=True instead when training on GPUs that support bf16
     do_eval=True,
     evaluation_strategy="epoch",
     gradient_accumulation_steps=128,
@@ -165,6 +165,7 @@ trainer = SFTTrainer(
     )
 
 train_result = trainer.train()
+print('---------------------- TRAINING FINISHED!')
 
 metrics = train_result.metrics
 max_train_samples = training_args.max_train_samples if training_args.max_train_samples is not None else len(train_dataset)
