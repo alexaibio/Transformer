@@ -4,14 +4,10 @@ https://github.com/NielsRogge/Transformers-Tutorials/blob/master/Mistral/Supervi
 https://github.com/huggingface/alignment-handbook/blob/main/scripts/run_sft.py
 
 """
-from datasets import load_dataset
-from datasets import DatasetDict
-from transformers import AutoTokenizer
+
 from transformers import AutoModelForCausalLM
-from huggingface_hub import login
 from settings import output_dir
-import random
-from multiprocessing import cpu_count
+
 from transformers import BitsAndBytesConfig
 import torch
 from trl import SFTTrainer
@@ -19,70 +15,14 @@ from peft import LoraConfig
 from transformers import TrainingArguments
 torch.cuda.empty_cache()
 
-# Enter your Hugging Face token when prompted
-login()
+from settings import device_map, model_id
+from load_data import build_raw_sft_dataset, load_model_tokenizer
 
-
-
-####### human DATASET
-raw_datasets = load_dataset("HuggingFaceH4/ultrachat_200k")
-
-# ---- remove this when done debugging
-indices = range(0,100)
-dataset_dict = {"train": raw_datasets["train_sft"].select(indices),
-                "test": raw_datasets["test_sft"].select(indices)}
-raw_datasets = DatasetDict(dataset_dict)
-# ------------------------------------
-
-'''
-example = raw_datasets["train"][0]
-messages = example["messages"]
-for message in messages:
-  role = message["role"]
-  content = message["content"]
-  print('{0:20}:  {1}'.format(role, content))
-'''
-
-
-######## Load tokenizer
-model_id = "mistralai/Mistral-7B-v0.1"
-
-tokenizer = AutoTokenizer.from_pretrained(model_id)
-# LlamaTokenizerFast is a BPE-based tokenizer
-print(f"Tokenizer class: {tokenizer.__class__.__name__}")
-
-# set PADDING for whole context length
-if tokenizer.pad_token_id is None:
-    tokenizer.pad_token_id = tokenizer.eos_token_id
-
-if tokenizer.model_max_length > 100_000:
-    tokenizer.model_max_length = 2048       # set to maximum context length ( T )
-
-
-
-#### Set and apply Jinja2 chat template to convert dictionary to string
-DEFAULT_CHAT_TEMPLATE = "{% for message in messages %}\n{% if message['role'] == 'user' %}\n{{ '<|user|>\n' + message['content'] + eos_token }}\n{% elif message['role'] == 'system' %}\n{{ '<|system|>\n' + message['content'] + eos_token }}\n{% elif message['role'] == 'assistant' %}\n{{ '<|assistant|>\n'  + message['content'] + eos_token }}\n{% endif %}\n{% if loop.last and add_generation_prompt %}\n{{ '<|assistant|>' }}\n{% endif %}\n{% endfor %}"
-tokenizer.chat_template = DEFAULT_CHAT_TEMPLATE
-
-def apply_chat_template(example, tokenizer):
-    messages = example["messages"]
-    # We add an empty system message if there is none
-    if messages[0]["role"] != "system":
-        messages.insert(0, {"role": "system", "content": ""})
-    example["text"] = tokenizer.apply_chat_template(messages, tokenize=False)
-
-    return example
-
-column_names = list(raw_datasets["train"].features)
-
-# run templating on multiple cores
-raw_datasets = raw_datasets.map(apply_chat_template,
-                                num_proc=cpu_count(),
-                                fn_kwargs={"tokenizer": tokenizer},
-                                remove_columns=column_names,    # which columns to remove from the dataset after applying the function.
-                                desc="Applying chat template",)
 
 # create the splits
+raw_datasets = build_raw_sft_dataset(model_id)
+tokenizer = load_model_tokenizer(model_id)
+
 train_dataset = raw_datasets["train"]
 eval_dataset = raw_datasets["test"]
 
@@ -92,7 +32,6 @@ eval_dataset = raw_datasets["test"]
 
 
 #################### MODEL
-device_map = {"": torch.cuda.current_device()} if torch.cuda.is_available() else None
 
 # quantize and LoRa
 quantization_config = BitsAndBytesConfig(
