@@ -22,7 +22,7 @@ messages = [
 ]
 
 # prepare the messages for the model
-input_ids = tokenizer.apply_chat_template(
+input_ids = tokenizer._apply_chat_template(
     messages,
     truncation=True,
     add_generation_prompt=True,

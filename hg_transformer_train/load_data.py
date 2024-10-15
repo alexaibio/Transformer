@@ -3,9 +3,10 @@ from datasets import DatasetDict
 from transformers import AutoTokenizer
 from huggingface_hub import login
 from multiprocessing import cpu_count
+from settings import get_project_root
 
 
-def apply_chat_template(example, tokenizer):
+def _apply_chat_template(example, tokenizer):
     messages = example["messages"]
     # We add an empty system message if there is none
     if messages[0]["role"] != "system":
@@ -15,7 +16,7 @@ def apply_chat_template(example, tokenizer):
     return example
 
 
-def load_raw_ultrachat_dataset():
+def _load_raw_ultrachat_dataset() -> DatasetDict:
     # Enter your Hugging Face token when prompted
     login()
 
@@ -24,8 +25,10 @@ def load_raw_ultrachat_dataset():
 
     # ---- remove this when done debugging: limit data to first 100 items
     indices = range(0,100)
-    dataset_dict = {"train": raw_datasets["train_sft"].select(indices),
-                    "test": raw_datasets["test_sft"].select(indices)}
+    dataset_dict = {
+        "train": raw_datasets["train_sft"].select(indices),
+        "test" : raw_datasets["test_sft"].select(indices)
+    }
     raw_datasets = DatasetDict(dataset_dict)
     # ------------------------------------
 
@@ -60,8 +63,8 @@ def load_model_tokenizer(model_id):
 
 #### apply Jinja2 template to convert dictionary to string
 
-def build_raw_sft_dataset(model_id):
-    raw_datasets = load_raw_ultrachat_dataset()
+def build_raw_sft_dataset(model_id) -> DatasetDict:
+    raw_datasets = _load_raw_ultrachat_dataset()
     column_names = list(raw_datasets["train"].features)
 
     tokenizer = load_model_tokenizer(model_id)
@@ -85,7 +88,7 @@ def build_raw_sft_dataset(model_id):
 
     # run templating on multiple cores - convert to a plain text
     raw_datasets = raw_datasets.map(
-        apply_chat_template,
+        _apply_chat_template,
         num_proc=cpu_count(),
         fn_kwargs={"tokenizer": tokenizer},
         remove_columns=column_names,        # which columns to remove from the dataset after applying the function.
@@ -101,47 +104,62 @@ from transformers import AutoTokenizer
 from sklearn.model_selection import train_test_split
 
 
-def load_text_files_from_directory(directory: str):
-    text_data = []
-    directory_path = Path(directory)
+def _load_text_corpus_from_folder():
+    text_data = ""
+    directory_path = get_project_root() / 'data/hedh/'
 
     # Iterate over all text files in the directory
     for file_path in directory_path.glob("*.txt"):
-        # Read the content of each file
         with file_path.open(encoding="utf-8") as file:
-            text_data.append(file.read())
+            text_data += file.read() + "\n"
 
     return text_data
 
 
-def split_text_into_chunks(text, chunk_size=1500, tokenizer=None):
-    """Splits text into smaller chunks of size `chunk_size` based on token length."""
-    if tokenizer:
-        tokens = tokenizer(text, return_tensors='pt', truncation=False)['input_ids'][0]
-        chunked_text = []
-        for i in range(0, len(tokens), chunk_size):
-            chunk = tokens[i:i+chunk_size]
-            chunked_text.append(tokenizer.decode(chunk, skip_special_tokens=True))
-        return chunked_text
-    else:
-        # Fallback to character-based splitting (if tokenizer is not available)
-        return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
+def _split_text_into_chunks(tokenized_data, chunk_size, overlap_size, eos_token_id):
+    """Splits tokenized text into chunks with overlap and adds an EOS token to each chunk."""
+    chunks = []
+    total_length = tokenized_data.size(1)  # The length of the sequence (number of tokens)
+
+    start = 0
+    while start < total_length:
+        # Define the end of the chunk
+        end = min(start + chunk_size, total_length)
+
+        # Extract the chunk and add the EOS token at the end
+        chunk = tokenized_data[0, start:end].tolist()
+        chunk.append(eos_token_id)
+
+        # Add the chunk to the list of chunks
+        chunks.append(chunk)
+
+        # Move the start of the next chunk with overlap
+        start += chunk_size - overlap_size
+
+    return chunks
 
 
-def build_raw_domain_adaptation_dataset(model_id, directory="/data/hedh/", chunk_size=2048, test_size=0.2, random_state=42):
+def build_raw_domain_adaptation_dataset(model_id):
     """Loads text files from a folder, splits them into chunks, and returns a train/test dataset dictionary."""
+    chunk_size = 2000
+    overlap_size = 100
 
-    # Load the tokenizer for the model
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    test_size = 0.2
+    random_state = 42
+
+    tokenizer = load_model_tokenizer(model_id)
 
     # Load all text files from the specified directory
-    text_data = load_text_files_from_directory(directory)
+    text_data = _load_text_corpus_from_folder()
 
-    # Split each document into smaller chunks based on token length
-    chunked_texts = []
-    for text in text_data:
-        chunks = split_text_into_chunks(text, chunk_size, tokenizer)
-        chunked_texts.extend(chunks)
+
+    # Tokenize the text data
+    tokenized_data = tokenizer(text_data, return_tensors="pt", truncation=False)["input_ids"]
+
+    # Split the tokenized data into chunks with overlap, and add eos token at the end of each chunk
+    chunked_texts = _split_text_into_chunks(tokenized_data, chunk_size, overlap_size, tokenizer.eos_token_id)
+
+
 
     # Split the data into training and test sets (80% train, 20% test by default)
     train_texts, test_texts = train_test_split(chunked_texts, test_size=test_size, random_state=random_state)
@@ -163,8 +181,8 @@ def build_raw_domain_adaptation_dataset(model_id, directory="/data/hedh/", chunk
 
 if __name__ == '__main__':
     from settings import model_id
-    ds = build_raw_sft_dataset(model_id)
-    print()
+    #sfo_ds = build_raw_sft_dataset(model_id)
+    #print()
 
-    domain_adaptation_dataset = build_raw_domain_adaptation_dataset(model_id)
+    da_ds = build_raw_domain_adaptation_dataset(model_id)
     print()

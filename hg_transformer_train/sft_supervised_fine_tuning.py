@@ -7,20 +7,18 @@ https://github.com/huggingface/alignment-handbook/blob/main/scripts/run_sft.py
 
 from transformers import AutoModelForCausalLM
 from settings import output_dir
-
 from transformers import BitsAndBytesConfig
 import torch
 from trl import SFTTrainer
 from peft import LoraConfig
 from transformers import TrainingArguments
+from settings import device_map, model_id
+from load_data import build_raw_sft_dataset, load_model_tokenizer, build_raw_domain_adaptation_dataset
 torch.cuda.empty_cache()
 
-from settings import device_map, model_id
-from load_data import build_raw_sft_dataset, load_model_tokenizer
-
-
 # create the splits
-raw_datasets = build_raw_sft_dataset(model_id)
+#raw_datasets = build_raw_sft_dataset(model_id)
+raw_datasets = build_raw_domain_adaptation_dataset()
 tokenizer = load_model_tokenizer(model_id)
 
 train_dataset = raw_datasets["train"]
@@ -35,9 +33,9 @@ eval_dataset = raw_datasets["test"]
 
 # quantize and LoRa
 quantization_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype="bfloat16",
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype="bfloat16",
 )
 
 
@@ -82,8 +80,8 @@ training_args = TrainingArguments(
     logging_strategy="steps",
     lr_scheduler_type="cosine",
     max_steps=-1,
-    num_train_epochs=2,     # was 1
-    output_dir=output_dir,
+    num_train_epochs=5,     # was 1
+    output_dir=output_dir + '/domain_adaptation',
     overwrite_output_dir=True,
     per_device_eval_batch_size=2,   # 1 originally set to 8
     per_device_train_batch_size=2,  # 1 originally set to 8
@@ -94,6 +92,7 @@ training_args = TrainingArguments(
     save_strategy="no",
     save_total_limit=None,
     seed=42,
+
 )
 
 # based on config
@@ -127,6 +126,7 @@ metrics = train_result.metrics
 max_train_samples = training_args.max_train_samples if hasattr(training_args, 'max_train_samples') else len(train_dataset)
 metrics["train_samples"] = min(max_train_samples, len(train_dataset))
 trainer.log_metrics("train", metrics)
+
 trainer.save_metrics("train", metrics)
 trainer.save_state()
 
