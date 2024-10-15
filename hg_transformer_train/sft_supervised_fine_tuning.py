@@ -18,7 +18,7 @@ torch.cuda.empty_cache()
 
 # create the splits
 #raw_datasets = build_raw_sft_dataset(model_id)
-raw_datasets = build_raw_domain_adaptation_dataset()
+raw_datasets = build_raw_domain_adaptation_dataset(model_id)
 tokenizer = load_model_tokenizer(model_id)
 
 train_dataset = raw_datasets["train"]
