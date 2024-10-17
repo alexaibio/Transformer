@@ -63,7 +63,10 @@ def load_model_tokenizer(model_id):
 
 #### apply Jinja2 template to convert dictionary to string
 
-def build_raw_sft_dataset(model_id) -> DatasetDict:
+def build_raw_sft_dataset_txt(model_id) -> DatasetDict:
+    """
+    RETURN: a text not tokenized train and test data
+    """
     raw_datasets = _load_raw_ultrachat_dataset()
     column_names = list(raw_datasets["train"].features)
 
@@ -94,6 +97,7 @@ def build_raw_sft_dataset(model_id) -> DatasetDict:
         remove_columns=column_names,        # which columns to remove from the dataset after applying the function.
         desc="Applying chat template",
     )
+    print(f"------------> one training example: \n {raw_datasets['train'][0]}")
     return raw_datasets
 
 
@@ -116,10 +120,11 @@ def _load_text_corpus_from_folder():
     return text_data
 
 
-def _split_text_into_chunks(tokenized_data, chunk_size, overlap_size, eos_token_id):
-    """Splits tokenized text into chunks with overlap and adds an EOS token to each chunk."""
+def _split_text_into_chunks(txt_data, chunk_size, overlap_size, eos_token_id):
+    """Splits  text into chunks with overlap and adds an EOS token to each chunk."""
     chunks = []
-    total_length = tokenized_data.size(1)  # The length of the sequence (number of tokens)
+    #total_length = tokenized_data.size(1)  # The length of the sequence (number of tokens)
+    total_length = len(txt_data)
 
     start = 0
     while start < total_length:
@@ -127,8 +132,8 @@ def _split_text_into_chunks(tokenized_data, chunk_size, overlap_size, eos_token_
         end = min(start + chunk_size, total_length)
 
         # Extract the chunk and add the EOS token at the end
-        chunk = tokenized_data[0, start:end].tolist()
-        chunk.append(eos_token_id)
+        chunk = txt_data[start:end]
+        chunk += eos_token_id
 
         # Add the chunk to the list of chunks
         chunks.append(chunk)
@@ -153,11 +158,12 @@ def build_raw_domain_adaptation_dataset(model_id):
     text_data = _load_text_corpus_from_folder()
 
 
+
     # Tokenize the text data
-    tokenized_data = tokenizer(text_data, return_tensors="pt", truncation=False)["input_ids"]
+    #tokenized_data = tokenizer(text_data, return_tensors="pt", truncation=False)["input_ids"]
 
     # Split the tokenized data into chunks with overlap, and add eos token at the end of each chunk
-    chunked_texts = _split_text_into_chunks(tokenized_data, chunk_size, overlap_size, tokenizer.eos_token_id)
+    chunked_texts = _split_text_into_chunks(text_data, chunk_size, overlap_size, tokenizer.eos_token)
 
 
 
@@ -174,8 +180,9 @@ def build_raw_domain_adaptation_dataset(model_id):
         "test": test_dataset
     })
 
-    return dataset_dict
+    print(f" One example of train data: \n {dataset_dict['train'][0]}")
 
+    return dataset_dict
 
 
 

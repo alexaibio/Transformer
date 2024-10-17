@@ -13,11 +13,11 @@ from trl import SFTTrainer
 from peft import LoraConfig
 from transformers import TrainingArguments
 from settings import device_map, model_id
-from load_data import build_raw_sft_dataset, load_model_tokenizer, build_raw_domain_adaptation_dataset
+from load_data import build_raw_sft_dataset_txt, load_model_tokenizer, build_raw_domain_adaptation_dataset
 torch.cuda.empty_cache()
 
 # create the splits
-#raw_datasets = build_raw_sft_dataset(model_id)
+#raw_datasets = build_raw_sft_dataset_txt(model_id)
 raw_datasets = build_raw_domain_adaptation_dataset(model_id)
 tokenizer = load_model_tokenizer(model_id)
 
