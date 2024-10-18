@@ -1,13 +1,11 @@
-from settings import output_dir
+from settings import output_base_dir
 from transformers import AutoTokenizer, AutoModelForCausalLM
-import torch
 
-
-# Let's generate some new texts with our trained model.
 
 # Load the fine-tuned tokenizer and model from your output directory
-tokenizer = AutoTokenizer.from_pretrained(output_dir)
-model = AutoModelForCausalLM.from_pretrained(output_dir, load_in_4bit=True, device_map="auto")
+tokenizer = AutoTokenizer.from_pretrained(output_base_dir + '/save_tokenizer')
+model = AutoModelForCausalLM.from_pretrained(output_base_dir + '/save_model', load_in_4bit=True, device_map="auto")
+
 
 
 
@@ -22,7 +20,7 @@ messages = [
 ]
 
 # prepare the messages for the model
-input_ids = tokenizer._apply_chat_template(
+input_ids = tokenizer.apply_chat_template(
     messages,
     truncation=True,
     add_generation_prompt=True,

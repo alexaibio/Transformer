@@ -3,10 +3,11 @@ SFT
 https://github.com/NielsRogge/Transformers-Tutorials/blob/master/Mistral/Supervised_fine_tuning_(SFT)_of_an_LLM_using_Hugging_Face_tooling.ipynb
 https://github.com/huggingface/alignment-handbook/blob/main/scripts/run_sft.py
 
+tensorboard --logdir models/Mistral-7B-v0.1/domain_adaptation/training/runs
 """
 
 from transformers import AutoModelForCausalLM
-from settings import output_dir
+from settings import output_base_dir
 from transformers import BitsAndBytesConfig
 import torch
 from trl import SFTTrainer
@@ -80,15 +81,15 @@ training_args = TrainingArguments(
     logging_strategy="steps",
     lr_scheduler_type="cosine",
     max_steps=-1,
-    num_train_epochs=5,     # was 1
-    output_dir=output_dir + '/domain_adaptation',
+    num_train_epochs=6,     # was 1
+    output_dir=output_base_dir + '/training',
     overwrite_output_dir=True,
     per_device_eval_batch_size=2,   # 1 originally set to 8
     per_device_train_batch_size=2,  # 1 originally set to 8
     # push_to_hub=True,
     # hub_model_id="zephyr-7b-sft-lora",
     # hub_strategy="every_save",
-    # report_to="tensorboard",
+    report_to="tensorboard",
     save_strategy="no",
     save_total_limit=None,
     seed=42,
@@ -132,8 +133,8 @@ trainer.save_state()
 
 
 # Save the fine-tuned model and tokenizer
-trainer.save_model(output_dir)          # this saves the model, including any adapters
-tokenizer.save_pretrained(output_dir)   # save the tokenizer
+trainer.save_model(output_base_dir + '/save_model')          # this saves the model, including any adapters
+tokenizer.save_pretrained(output_base_dir + '/save_tokenizer')   # save the tokenizer
 
 
 
