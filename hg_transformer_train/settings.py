@@ -2,8 +2,8 @@ import torch
 from pathlib import Path
 from datetime import datetime
 
-current_run = '_24_10_18'
-output_base_dir = f'models/Mistral-7B-v0.1/domain_adaptation'
+current_run = '_24_10_19'
+output_base_dir = f'models/Mistral-7B-v0.1/domain_adaptation_{current_run}'
 
 model_id = "mistralai/Mistral-7B-v0.1"
 

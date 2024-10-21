@@ -3,7 +3,7 @@ SFT
 https://github.com/NielsRogge/Transformers-Tutorials/blob/master/Mistral/Supervised_fine_tuning_(SFT)_of_an_LLM_using_Hugging_Face_tooling.ipynb
 https://github.com/huggingface/alignment-handbook/blob/main/scripts/run_sft.py
 
-tensorboard --logdir models/Mistral-7B-v0.1/domain_adaptation/training/runs
+tensorboard --logdir /home/alex/Projects_py/Transformer/hg_transformer_train/models/Mistral-7B-v0.1/domain_adaptation/training/runs
 """
 
 from transformers import AutoModelForCausalLM
@@ -75,13 +75,13 @@ training_args = TrainingArguments(
     gradient_accumulation_steps=128,
     gradient_checkpointing=True,
     gradient_checkpointing_kwargs={"use_reentrant": False},
-    learning_rate=2.0e-05,
+    learning_rate=1.5e-05,
     log_level="info",
-    logging_steps=5,
+    logging_steps=1,
     logging_strategy="steps",
     lr_scheduler_type="cosine",
     max_steps=-1,
-    num_train_epochs=6,     # was 1
+    num_train_epochs=10,     # was 1
     output_dir=output_base_dir + '/training',
     overwrite_output_dir=True,
     per_device_eval_batch_size=2,   # 1 originally set to 8
@@ -123,12 +123,12 @@ train_result = trainer.train()
 print('---------------------- TRAINING FINISHED! ---------------------')
 
 metrics = train_result.metrics
-
 max_train_samples = training_args.max_train_samples if hasattr(training_args, 'max_train_samples') else len(train_dataset)
 metrics["train_samples"] = min(max_train_samples, len(train_dataset))
-trainer.log_metrics("train", metrics)
 
+trainer.log_metrics("train", metrics)
 trainer.save_metrics("train", metrics)
+
 trainer.save_state()
 
 
